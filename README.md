@@ -35,4 +35,4 @@ A Python script that automatically sends Discord notifications whenever new item
 ## Customization
 
 - You can change the `PLEX_URL` if your Plex server isn't running locally.
-- You can adjust the `time.sleep(30)` value to control how frequently the script checks for changes.
+- You can adjust the `time.sleep(30)` value to control how frequently the script checks for changes. (Default is 30 so as to not hit Plex's API rate limit)
