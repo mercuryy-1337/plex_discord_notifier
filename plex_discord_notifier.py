@@ -2,11 +2,15 @@ import requests
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 import time
+import threading
+
 
 # plex and discord parameters 
 PLEX_URL = 'http://localhost:32400/' #default plex url when running the script locally, can be changed though
 PLEX_TOKEN = '<plex token>'  
 DISCORD_WEBHOOK = '<webhook url>'  # Discord webhook url
+
+stop = False #global input flag
 
 def send_dc_notification(username, title):
     """Sends a notification to the configured Discord webhook"""
@@ -33,20 +37,36 @@ for user_config in user_configs:
     initial_watchlist[user_config['username']] = account.watchlist(sort='watchlistedAt') 
 
 # Monitor for changes
+def monitor_watchlists():
+    while True:
+        for user_config in user_configs:
+            account = MyPlexAccount(user_config['username'], user_config['password'])
+            current_watchlist = account.watchlist(sort='watchlistedAt')
+
+            # Compare to find new items
+            new_item_titles = [item.title for item in current_watchlist if item.title not in [item.title for item in initial_watchlist[user_config['username']]]]
+
+            for title in new_item_titles:
+                print(f"New item added to {user_config['username']}'s watchlist: {title}")
+                send_dc_notification(user_config['username'], title)
+
+            # Update the initial watchlist for this user
+            initial_watchlist[user_config['username']] = current_watchlist 
+
+        time.sleep(30)  # Check every 30 seconds
+
+monitoring_thread = threading.Thread(target=monitor_watchlists)
+monitoring_thread.start()
+
+print('--------------------------------')  
 print('Monitoring changes to watchlists...')
-while True:
-    for user_config in user_configs:
-        account = MyPlexAccount(user_config['username'], user_config['password'])
-        current_watchlist = account.watchlist(sort='watchlistedAt')
-
-        # Compare to find new items
-        new_item_titles = [item.title for item in current_watchlist if item.title not in [item.title for item in initial_watchlist[user_config['username']]]]
-
-        for title in new_item_titles:
-            print(f"New item added to {user_config['username']}'s watchlist: {title}")
-            send_dc_notification(user_config['username'], title)
-
-        # Update the initial watchlist for this user
-        initial_watchlist[user_config['username']] = current_watchlist 
-
-    time.sleep(30)  # Check every 20 seconds
+print('--------------------------------')  
+try:
+    while True:
+        if input("Type 'exit' or 'stop' at anytime to quit\n").lower() in ['exit', 'stop']:
+            print('Exiting...')
+            stop = True 
+            break  
+except KeyboardInterrupt: 
+    print('Exiting...')
+    stop = True  # Handle Ctrl-C 
