@@ -17,28 +17,36 @@ def send_dc_notification(username, title):
 
 # Connect to Plex
 plex = PlexServer(PLEX_URL, PLEX_TOKEN)
-account = MyPlexAccount('<Username>','<Password>') 
 
-initial_watchlist = account.watchlist(sort='watchlistedAt') # retrieve user's watchlist, sorted by the most recently added item
+# Configuration for multiple users
+user_configs = [
+    {'username': '<username here>', 'password': '<password here>'},
+    {'username': '<username here>', 'password': '<password here>'},
+    # ... Add more users as needed
+]
 
-# Printing the most recently added item just to test something
-if initial_watchlist:
-    print(initial_watchlist[-1])
-else:
-    print('watchlist is empty')
+initial_watchlist = {} 
+
+# Initialize watchlists for each user
+for user_config in user_configs:
+    account = MyPlexAccount(user_config['username'], user_config['password'])
+    initial_watchlist[user_config['username']] = account.watchlist(sort='watchlistedAt') 
 
 # Monitor for changes
+print('Monitoring changes to watchlists...')
 while True:
-    current_watchlist = account.watchlist(sort='watchlistedAt')
+    for user_config in user_configs:
+        account = MyPlexAccount(user_config['username'], user_config['password'])
+        current_watchlist = account.watchlist(sort='watchlistedAt')
 
-    # Compare to find new items
-    new_item_titles = [item.title for item in current_watchlist if item.title not in [item.title for item in initial_watchlist]]
+        # Compare to find new items
+        new_item_titles = [item.title for item in current_watchlist if item.title not in [item.title for item in initial_watchlist[user_config['username']]]]
 
-    for title in new_item_titles:
-        print(f"New item added to watchlist: {title}")
-        send_dc_notification(account.username, title)
+        for title in new_item_titles:
+            print(f"New item added to {user_config['username']}'s watchlist: {title}")
+            send_dc_notification(user_config['username'], title)
 
-    # Update the initial watchlist
-    initial_watchlist = current_watchlist 
+        # Update the initial watchlist for this user
+        initial_watchlist[user_config['username']] = current_watchlist 
 
-    time.sleep(30)  # Check every 30 seconds
+    time.sleep(30)  # Check every 20 seconds
