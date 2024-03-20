@@ -4,8 +4,8 @@ A Python script that automatically sends Discord notifications whenever new item
 
 ## Requirements
 
-- Python 3
-- Install dependencies using pip: `pip install -r requirements.txt`)
+- Python or Python3
+- Install dependencies using pip: `pip install -r requirements.txt`
 - A Plex Media Server
 - A Discord webhook
 
